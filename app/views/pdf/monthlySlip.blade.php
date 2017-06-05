@@ -104,7 +104,7 @@ body {
   <div  class="content" style='page-break-after: always;margin-top:-50px'>
 
 
-    <table class="table table-bordered" border='1' cellspacing='0' cellpadding='0' style='width:200px'>
+    <table class="table table-bordered" border='1' cellspacing='0' cellpadding='0' style='width:350px'>
           {{'<tr><td colspan="2" align="center"><strong>PERIOD : '.$period.'</strong></td></tr>'}}
         <tr><td colspan='2'><strong>PERSONAL DETAILS</strong></td></tr>
 

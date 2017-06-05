@@ -3187,24 +3187,55 @@ Route::get('api/salary', function(){
 Route::get('api/branchemployee', function(){
     $bid = Input::get('option');
     $did = Input::get('deptid');
+    $seltype = Input::get('type');
     $employee = array();
+
+    $department = Department::where('department_name','Management')
+                  ->where(function($query){
+                         $query->whereNull('organization_id')
+                               ->orWhere('organization_id',Confide::user()->organization_id);
+                 })->first();
 
 
     if(($bid == 'All' || $bid == '' || $bid == 0) && ($did == 'All' || $did == '' || $did == 0)){
+    if($seltype == 1 || Confide::user()->user_type == 'admin'){
     $employee = Employee::select('id', DB::raw('CONCAT(personal_file_number, " : ", first_name," ",middle_name," ",last_name) AS full_name'))
     ->where('organization_id',Confide::user()->organization_id)
     ->lists('full_name', 'id');
+    }else{
+    $employee = Employee::select('id', DB::raw('CONCAT(personal_file_number, " : ", first_name," ",middle_name," ",last_name) AS full_name'))
+    ->where('organization_id',Confide::user()->organization_id)
+    ->where('department_id','!=',$department->id)
+    ->lists('full_name', 'id');
+    }
     }else if(($bid != 'All' || $bid != '' || $bid != 0) && ($did == 'All' || $did == '' || $did == 0)){
+    if($seltype == 1 || Confide::user()->user_type == 'admin'){
     $employee = Employee::select('id', DB::raw('CONCAT(personal_file_number, " : ", first_name," ",middle_name," ",last_name) AS full_name'))
     ->where('branch_id',$bid)
     ->where('organization_id',Confide::user()->organization_id)
     ->lists('full_name', 'id');
+    }else{
+    $employee = Employee::select('id', DB::raw('CONCAT(personal_file_number, " : ", first_name," ",middle_name," ",last_name) AS full_name'))
+    ->where('branch_id',$bid)
+    ->where('organization_id',Confide::user()->organization_id)
+    ->where('department_id','!=',$department->id)
+    ->lists('full_name', 'id'); 
+    }
     }else if(($did != 'All' || $did != '' || $did != 0) && ($bid != 'All' || $bid != '' || $bid != 0) ){
+    if($seltype == 1 || Confide::user()->user_type == 'admin'){
     $employee = Employee::select('id', DB::raw('CONCAT(personal_file_number, " : ", first_name," ",middle_name," ",last_name) AS full_name'))
     ->where('branch_id',$bid)
     ->where('organization_id',Confide::user()->organization_id)
     ->where('department_id',$did)
     ->lists('full_name', 'id');
+    }else{
+    $employee = Employee::select('id', DB::raw('CONCAT(personal_file_number, " : ", first_name," ",middle_name," ",last_name) AS full_name'))
+    ->where('branch_id',$bid)
+    ->where('organization_id',Confide::user()->organization_id)
+    ->where('department_id','!=',$department->id)
+    ->where('department_id',$did)
+    ->lists('full_name', 'id');
+    }
     }
 
     return $employee;
@@ -3213,23 +3244,54 @@ Route::get('api/branchemployee', function(){
 Route::get('api/deptemployee', function(){
     $did = Input::get('option');
     $bid = Input::get('bid');
+    $seltype = Input::get('type');
     $employee = array();
 
+    $department = Department::where('department_name','Management')
+                  ->where(function($query){
+                         $query->whereNull('organization_id')
+                               ->orWhere('organization_id',Confide::user()->organization_id);
+                 })->first();
+
     if(($did == 'All' || $did == '' || $did == 0) && ($bid == 'All' || $bid == '' || $bid == 0)){
+    if($seltype == 1 || Confide::user()->user_type == 'admin'){
     $employee = Employee::select('id', DB::raw('CONCAT(personal_file_number, " : ", first_name," ",middle_name," ",last_name) AS full_name'))
     ->where('organization_id',Confide::user()->organization_id)
     ->lists('full_name', 'id');
+    }else{
+    $employee = Employee::select('id', DB::raw('CONCAT(personal_file_number, " : ", first_name," ",middle_name," ",last_name) AS full_name'))
+    ->where('organization_id',Confide::user()->organization_id)
+    ->where('department_id','!=',$department->id)
+    ->lists('full_name', 'id');
+    }
     }else if(($did != 'All' || $did != '' || $did != 0) && ($bid == 'All' || $bid == '' || $bid == 0)){
+    if($seltype == 1 || Confide::user()->user_type == 'admin'){
     $employee = Employee::select('id', DB::raw('CONCAT(personal_file_number, " : ", first_name," ",middle_name," ",last_name) AS full_name'))
     ->where('department_id',$did)
     ->where('organization_id',Confide::user()->organization_id)
     ->lists('full_name', 'id');
+    }else{
+    $employee = Employee::select('id', DB::raw('CONCAT(personal_file_number, " : ", first_name," ",middle_name," ",last_name) AS full_name'))
+    ->where('department_id',$did)
+    ->where('organization_id',Confide::user()->organization_id)
+    ->where('department_id','!=',$department->id)
+    ->lists('full_name', 'id'); 
+    }
     }else if(($did != 'All' || $did != '' || $did != 0) && ($bid != 'All' || $bid != '' || $bid != 0) ){
+    if($seltype == 1 || Confide::user()->user_type == 'admin'){
     $employee = Employee::select('id', DB::raw('CONCAT(personal_file_number, " : ", first_name," ",middle_name," ",last_name) AS full_name'))
     ->where('branch_id',$bid)
     ->where('organization_id',Confide::user()->organization_id)
     ->where('department_id',$did)
     ->lists('full_name', 'id');
+    }else{
+    $employee = Employee::select('id', DB::raw('CONCAT(personal_file_number, " : ", first_name," ",middle_name," ",last_name) AS full_name'))
+    ->where('branch_id',$bid)
+    ->where('organization_id',Confide::user()->organization_id)
+    ->where('department_id','!=',$department->id)
+    ->where('department_id',$did)
+    ->lists('full_name', 'id');   
+    }
     }
 
     return $employee;

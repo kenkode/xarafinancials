@@ -14,8 +14,8 @@
                     <li>
                         <a href="#"><i class="fa fa-credit-card fa-fw"></i>Payroll Management <i class="fa fa-caret-down"></i></a>
                         <ul class="nav">
-                            <li><a href="{{ URL::to('dailypays') }}"><i class="fa fa-credit-card fa-fw"></i>Worked Days Pay</a>
-                            <li><a href="{{ URL::to('other_earnings') }}"><i class="fa fa-credit-card fa-fw"></i>Earnings</a>
+                            <!-- <li><a href="{{ URL::to('dailypays') }}"><i class="fa fa-credit-card fa-fw"></i>Worked Days Pay</a>
+                             --><li><a href="{{ URL::to('other_earnings') }}"><i class="fa fa-credit-card fa-fw"></i>Earnings</a>
                             <li><a href="{{ URL::to('employee_allowances') }}"><i class="fa fa-credit-card fa-fw"></i>Allowances</a>
                             <li><a href="{{ URL::to('overtimes') }}"><i class="fa fa-credit-card fa-fw"></i>Time Earnings</a> 
                             <li><a href="{{ URL::to('employee_deductions') }}"><i class="fa fa-barcode fa-fw"></i>Deductions</a>

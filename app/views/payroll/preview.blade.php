@@ -11,6 +11,7 @@ $start  = date('Y-m-01', strtotime($end_date));
 
      $per = DB::table('transact')
           ->where('financial_month_year','=',$period)
+          ->where('process_type','=',$type)
           ->where('organization_id','=',Confide::user()->organization_id)
           ->count();
      if($per>0){?>
@@ -24,6 +25,7 @@ $start  = date('Y-m-01', strtotime($end_date));
                   var p1 = <?php echo $part[0]?>;
                   var p2 = "-";
                   var p3 = <?php echo $part[1]?>;
+                  var type = <?php echo $type?>;
 
                   console.log(p1+p2+p3);
 
@@ -34,7 +36,8 @@ $start  = date('Y-m-01', strtotime($end_date));
                       data    : {
                           'period1'  : p1,
                           'period2'  : p2,
-                          'period3'  : p3
+                          'period3'  : p3,
+                          'type'  : p3
                       },
                       success : function(d){
                        
@@ -134,6 +137,7 @@ function asMoney($value) {
       <div align="right" style="margin-top:50px;" class="form-actions form-group">
 
         <input type="hidden" value="{{ $period }}" name="period"/>
+
         
      
   <h3 align="left">Payroll Preview for {{ $period }}<button class="btn btn-primary btn-sm process" style="margin-left:670px;">Process</button></h3>
@@ -158,6 +162,7 @@ function asMoney($value) {
 
       <input type="hidden" name="period" value="{{ $period }}"> 
        <input type="hidden" name="account" value="{{ $account }}"> 
+       <input type="hidden" value="{{ $type }}" name="type"/>
 
     <table id="example" data-show-refresh="true" style="font-size:10px;width:1000px" class="table table-condensed table-bordered table-responsive table-hover nowrap">
 
@@ -224,17 +229,13 @@ function asMoney($value) {
           <td>{{ $employee->first_name.' '.$employee->last_name }}</td>
           <?php
 
-          if(Dailypay::dpay($employee->id,$period) > 0){
-           $totalsalary = $totalsalary + (double)Dailypay::pay($employee->id,$period);
-          }else{
+          
            $totalsalary = $totalsalary + (double)$employee->basic_pay;
-          }
+        
           ?>
-          @if(Dailypay::dpay($employee->id,$period) > 0)
-          <td align="right">{{ asMoney((double)Dailypay::pay($employee->id,$period)) }}</td>
-          @else
+          
           <td align="right">{{ asMoney((double)$employee->basic_pay) }}</td>
-          @endif
+       
           @foreach($earnings as $earning)
           <td align="right">{{ asMoney((double)Payroll::earnings($employee->id,$earning->id,$period)) }}</td>
           @endforeach

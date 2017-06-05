@@ -394,11 +394,9 @@ public static $rules = [
     $sal = $pay->total_pay;
     }
     
-    if(Dailypay::dpay($id,$period) > 0){
-    $salary = Dailypay::pay($id,$period);
-    }else{
+    
     $salary = $sal;
-    }
+    
 
     return round($salary,2);
    }

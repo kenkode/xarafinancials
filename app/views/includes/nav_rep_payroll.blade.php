@@ -29,11 +29,19 @@
                     </li>  
 
                     <li>
+                        <a href="{{ URL::to('payrollReports/selectOvertime') }}"><i class="glyphicon glyphicon-file fa-fw"></i> Overtime Report</a>
+                    </li> 
+
+                    <li>
                         <a href="{{ URL::to('payrollReports/selectnontaxableincome') }}"><i class="glyphicon glyphicon-file fa-fw"></i> Non Taxable Income Report</a>
                     </li>  
 
                     <li>
                         <a href="{{ URL::to('payrollReports/selectDeduction') }}"><i class="glyphicon glyphicon-file fa-fw"></i> Deduction Report</a>
+                    </li>  
+
+                    <li>
+                        <a href="{{ URL::to('payrollReports/selectRelief') }}"><i class="glyphicon glyphicon-file fa-fw"></i> Relief Report</a>
                     </li>  
 
                     

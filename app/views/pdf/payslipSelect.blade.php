@@ -8,7 +8,8 @@ $(document).ready(function() {
     $('#branchid').change(function(){
         $.get("{{ url('api/branchemployee')}}", 
         { option: $(this).val(),
-          deptid: $('#departmentid').val()
+          deptid: $('#departmentid').val(),
+          type: $('#type').val()
          }, 
         function(data) {
             $('#employeeid').empty(); 
@@ -23,7 +24,8 @@ $(document).ready(function() {
     $('#departmentid').change(function(){
         $.get("{{ url('api/deptemployee')}}", 
         { option: $(this).val(),
-          bid: $('#branchid').val()
+          bid: $('#branchid').val(),
+          type: $('#type').val()
         }, 
         function(data1) {
             $('#employeeid').empty(); 
@@ -33,8 +35,6 @@ $(document).ready(function() {
             });
         });
     });
-
-  
 
 });
 </script>
@@ -67,6 +67,8 @@ $(document).ready(function() {
    
     <fieldset>
 
+     <input required class="form-control" readonly="readonly" placeholder="" type="hidden" name="period" id="period" value="{{$type}}">
+
         <div class="form-group">
                         <label for="username">Period <span style="color:red">*</span></label>
                         <div class="right-inner-addon ">
@@ -74,6 +76,7 @@ $(document).ready(function() {
                         <input required class="form-control datepicker2" readonly="readonly" placeholder="" type="text" name="period" id="period" value="{{{ Input::old('period') }}}">
                     </div>
        </div>
+
 
        <div class="form-group">
                         <label for="username">Select Branch: <span style="color:red">*</span></label>

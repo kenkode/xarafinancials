@@ -11,9 +11,12 @@ class PayrollController extends \BaseController {
     {
       
         $accounts = Account::where('organization_id',Confide::user()->organization_id)->get();
-        
 
-        return View::make('payroll.index', compact('accounts'));
+        $department = Department::whereNull('organization_id')->orWhere('organization_id',Confide::user()->organization_id)->where('department_name','Management')->first();
+
+        $type = Employee::where('organization_id',Confide::user()->organization_id)->where('department_id',$department->id)->where('personal_file_number',Confide::user()->username)->count();
+
+        return View::make('payroll.index', compact('accounts','type'));
     }
 
     public function createaccount()
@@ -72,17 +75,38 @@ class PayrollController extends \BaseController {
      */
     public function create()
     {
-        $employees = DB::table('employee')
+
+       $employees = DB::table('employee')
                   ->where('in_employment','=','Y')
                   ->where('organization_id',Confide::user()->organization_id)
                   ->get();
 
-       $department = Department::whereNull('organization_id')->orWhere('organization_id',Confide::user()->organization_id)->where('name','Management')->first();
+      $department = Department::where('department_name','Management')
+                  ->where(function($query){
+                         $query->whereNull('organization_id')
+                               ->orWhere('organization_id',Confide::user()->organization_id);
+                 })->first();
+
+       if(Input::get('type') == 'management'){
+
+         $employees = DB::table('employee')
+                  ->where('in_employment','=','Y')
+                  ->where('organization_id',Confide::user()->organization_id)
+                  ->where('department_id',$department->id)
+                  ->get();
+       }else{
+          $employees = DB::table('employee')
+                  ->where('in_employment','=','Y')
+                  ->where('organization_id',Confide::user()->organization_id)
+                  ->where('department_id','!=',$department->id)
+                  ->get();
+       }
 
         $period = Input::get('period');
+        $type = Input::get('type');
         $account = Input::get('account');
         $earnings = Earningsetting::where('organization_id',Confide::user()->organization_id)->orWhereNull('organization_id')->get();
-        $pays = Dailypay::where('organization_id',Confide::user()->organization_id)->get();
+        //$pays = Dailypay::where('organization_id',Confide::user()->organization_id)->get();
         $overtimes = Overtime::all();
         $allowances = Allowance::where('organization_id',Confide::user()->organization_id)->orWhereNull('organization_id')->get();
         $nontaxables = Nontaxable::where('organization_id',Confide::user()->organization_id)->orWhereNull('organization_id')->get();
@@ -92,7 +116,7 @@ class PayrollController extends \BaseController {
 
         Audit::logaudit('Payroll', 'preview', 'previewed payroll');
 
-        return View::make('payroll.preview', compact('employees','period','account','nontaxables','earnings','overtimes','allowances','reliefs','deductions','pays','department'));
+        return View::make('payroll.preview', compact('employees','period','account','nontaxables','earnings','overtimes','allowances','reliefs','deductions','type'));
     }
 
     public function del_exist()
@@ -101,12 +125,14 @@ class PayrollController extends \BaseController {
     $part1    = $postedit['period1'];
     $part2    = $postedit['period2'];
     $part3    = $postedit['period3'];
+    $type    = $postedit['type'];
 
     $period   = $part1.$part2.$part3;  
 
     DB::table('employee_allowances')
               ->join('transact_allowances','employee_allowances.id','=','transact_allowances.employee_allowance_id')
               ->where('transact_allowances.organization_id',Confide::user()->organization_id)
+              ->where('process_type',$type)
               ->where(function($query){
                 $query->where('formular','=','One Time')
                       ->orWhere('formular','=','Instalments');
@@ -117,6 +143,7 @@ class PayrollController extends \BaseController {
               ->join('transact_nontaxables','employeenontaxables.id','=','transact_nontaxables.employee_nontaxable_id')
               ->where('financial_month_year', '=', $period)
               ->where('transact_nontaxables.organization_id',Confide::user()->organization_id)
+              ->where('process_type',$type)
               ->where(function($query){
                 $query->where('formular','=','One Time')
                       ->orWhere('formular','=','Instalments');
@@ -127,6 +154,7 @@ class PayrollController extends \BaseController {
               ->join('transact_deductions','employee_deductions.id','=','transact_deductions.employee_deduction_id')
               ->where('financial_month_year', '=', $period)
               ->where('transact_deductions.organization_id',Confide::user()->organization_id)
+              ->where('process_type',$type)
               ->where(function($query){
                 $query->where('formular','=','One Time')
                       ->orWhere('formular','=','Instalments');
@@ -137,6 +165,7 @@ class PayrollController extends \BaseController {
               ->join('transact_earnings','earnings.id','=','transact_earnings.earning_id')
               ->where('financial_month_year', '=', $period)
               ->where('transact_earnings.organization_id',Confide::user()->organization_id)
+              ->where('process_type',$type)
               ->where(function($query){
                 $query->where('formular','=','One Time')
                       ->orWhere('formular','=','Instalments');
@@ -147,24 +176,25 @@ class PayrollController extends \BaseController {
               ->join('transact_overtimes','overtimes.id','=','transact_overtimes.overtime_id')
               ->where('financial_month_year', '=', $period)
               ->where('transact_overtimes.organization_id',Confide::user()->organization_id)
+              ->where('process_type',$type)
               ->where(function($query){
                 $query->where('formular','=','One Time')
                       ->orWhere('formular','=','Instalments');
                })
               ->increment('instalments');
 
-        DB::table('dailypays')->where('period',$period)->where('status',1)->update(array("status"=>0));
+        //DB::table('dailypays')->where('period',$period)->where('status',1)->update(array("status"=>0));
         
 
         
     
-    $data     = DB::table('transact')->where('organization_id',Confide::user()->organization_id)->where('financial_month_year',$period)->delete(); 
-    $data2    = DB::table('transact_allowances')->where('organization_id',Confide::user()->organization_id)->where('financial_month_year', '=', $period)->delete();
-    $data3    = DB::table('transact_deductions')->where('organization_id',Confide::user()->organization_id)->where('financial_month_year', '=', $period)->delete();
-    $data4    = DB::table('transact_earnings')->where('organization_id',Confide::user()->organization_id)->where('financial_month_year', '=', $period)->delete();
-    $data5    = DB::table('transact_overtimes')->where('organization_id',Confide::user()->organization_id)->where('financial_month_year', '=', $period)->delete();
-    $data6    = DB::table('transact_reliefs')->where('organization_id',Confide::user()->organization_id)->where('financial_month_year', '=', $period)->delete();
-    $data7    = DB::table('transact_nontaxables')->where('organization_id',Confide::user()->organization_id)->where('financial_month_year', '=', $period)->delete();
+    $data     = DB::table('transact')->where('process_type',$type)->where('organization_id',Confide::user()->organization_id)->where('financial_month_year',$period)->delete(); 
+    $data2    = DB::table('transact_allowances')->where('process_type',$type)->where('organization_id',Confide::user()->organization_id)->where('financial_month_year', '=', $period)->delete();
+    $data3    = DB::table('transact_deductions')->where('process_type',$type)->where('organization_id',Confide::user()->organization_id)->where('financial_month_year', '=', $period)->delete();
+    $data4    = DB::table('transact_earnings')->where('process_type',$type)->where('organization_id',Confide::user()->organization_id)->where('financial_month_year', '=', $period)->delete();
+    $data5    = DB::table('transact_overtimes')->where('process_type',$type)->where('organization_id',Confide::user()->organization_id)->where('financial_month_year', '=', $period)->delete();
+    $data6    = DB::table('transact_reliefs')->where('process_type',$type)->where('organization_id',Confide::user()->organization_id)->where('financial_month_year', '=', $period)->delete();
+    $data7    = DB::table('transact_nontaxables')->where('process_type',$type)->where('organization_id',Confide::user()->organization_id)->where('financial_month_year', '=', $period)->delete();
    
     if($data > 0){
       return 0;
@@ -754,12 +784,34 @@ $display .="
       $part1    = $postedit['period1'];
       $part2    = $postedit['period2'];
       $part3    = $postedit['period3'];
+      $type     = $postedit['type'];
 
       $fperiod   = $part1.$part2.$part3; 
       $employees = DB::table('employee')
                   ->where('in_employment','=','Y')
                   ->where('organization_id',Confide::user()->organization_id)
                   ->get();
+
+      $department = Department::where('department_name','Management')
+                  ->where(function($query){
+                         $query->whereNull('organization_id')
+                               ->orWhere('organization_id',Confide::user()->organization_id);
+                 })->first();
+
+       if($type == 'management'){
+
+         $employees = DB::table('employee')
+                  ->where('in_employment','=','Y')
+                  ->where('organization_id',Confide::user()->organization_id)
+                  ->where('department_id',$department->id)
+                  ->get();
+       }else{
+          $employees = DB::table('employee')
+                  ->where('in_employment','=','Y')
+                  ->where('organization_id',Confide::user()->organization_id)
+                  ->where('department_id','!=',$department->id)
+                  ->get();
+       }
         
         $i=1;
         $salary   = 0.00;
@@ -799,11 +851,9 @@ $display .="
 
 
         foreach($employees as $employee){
-         if(Dailypay::dpay($employee->id,$fperiod) > 0){
-         $salary = number_format(Dailypay::pay($employee->id,$fperiod),2);
-         }else{
+         
          $salary = number_format($employee->basic_pay,2);  
-         }
+         
          $hourly = number_format(Payroll::overtimes($employee->id,'Daily',$fperiod),2);
          $daily  = number_format(Payroll::overtimes($employee->id,'Hourly',$fperiod),2);
          $gross = number_format(Payroll::gross($employee->id,$fperiod),2);
@@ -934,15 +984,39 @@ $display .="
                   ->where('organization_id',Confide::user()->organization_id)
                   ->get();
 
+        $employees = DB::table('employee')
+                  ->where('in_employment','=','Y')
+                  ->where('organization_id',Confide::user()->organization_id)
+                  ->get();
+
+        $department = Department::where('department_name','Management')
+                  ->where(function($query){
+                         $query->whereNull('organization_id')
+                               ->orWhere('organization_id',Confide::user()->organization_id);
+                 })->first();
+
+       if(Input::get('type') == 'management'){
+
+         $employees = DB::table('employee')
+                  ->where('in_employment','=','Y')
+                  ->where('organization_id',Confide::user()->organization_id)
+                  ->where('department_id',$department->id)
+                  ->get();
+       }else{
+          $employees = DB::table('employee')
+                  ->where('in_employment','=','Y')
+                  ->where('organization_id',Confide::user()->organization_id)
+                  ->where('department_id','!=',$department->id)
+                  ->get();
+       }
+
         foreach ($employees as $employee) {
         $payroll = new Payroll;
 
         $payroll->employee_id = $employee->personal_file_number;
-        if(Dailypay::dpay($employee->id,Input::get('period')) > 0){
-        $payroll->basic_pay = round(Dailypay::pay($employee->id,Input::get('period')),2);
-        }else{
+       
         $payroll->basic_pay = $employee->basic_pay; 
-        }
+        
         $payroll->earning_amount = Payroll::total_benefits($employee->id,Input::get('period'));
         $payroll->taxable_income = Payroll::gross($employee->id,Input::get('period'));
         $payroll->paye = Payroll::tax($employee->id,Input::get('period'));
@@ -954,6 +1028,7 @@ $display .="
         $payroll->net = Payroll::net($employee->id,Input::get('period'));
         $payroll->financial_month_year = Input::get('period');
         $payroll->account_id = Input::get('account');
+        $payroll->process_type = Input::get('type');
         $payroll->organization_id = Confide::user()->organization_id;
         $payroll->save();
     
@@ -964,7 +1039,7 @@ $display .="
         $start = $part[1]."-".$part[0]."-01";
         $end  = date('Y-m-t', strtotime($start));
         
-        DB::table('dailypays')->where('period',$period)->where('status',0)->update(array("status"=>1));
+        //DB::table('dailypays')->where('period',$period)->where('status',0)->update(array("status"=>1));
         
         $allws = DB::table('employee_allowances')
             ->join('allowances', 'employee_allowances.allowance_id', '=', 'allowances.id')
@@ -1010,6 +1085,7 @@ $display .="
         'allowance_id' => $allw->allowance_id,
         'allowance_amount' => $allw->allowance_amount,
         'financial_month_year'=>Input::get('period'),
+        'process_type'=>Input::get('type'),
         ]
         );
         }
@@ -1071,6 +1147,7 @@ $display .="
         'nontaxable_id' => $nontax->nontaxable_id,
         'nontaxable_amount' => $nontax->nontaxable_amount,
         'financial_month_year'=>Input::get('period'),
+        'process_type'=>Input::get('type'),
         ]
         );
         }
@@ -1131,6 +1208,7 @@ $display .="
         'deduction_id' => $ded->deduction_id,
         'deduction_amount' => $ded->deduction_amount,
         'financial_month_year'=>Input::get('period'),
+        'process_type'=>Input::get('type')
         ]
         );
         }
@@ -1191,6 +1269,7 @@ $display .="
         'earning_name' => $earn->earning_name,
         'earning_amount' => $earn->earnings_amount,
         'financial_month_year'=>Input::get('period'),
+        'process_type'=>Input::get('type')
         ]
         );
         }
@@ -1250,6 +1329,7 @@ $display .="
         'overtime_period' => $overtime->period,
         'overtime_amount' => $overtime->amount,
         'financial_month_year'=>Input::get('period'),
+        'process_type'=>Input::get('type')
         ]
         );
         }
@@ -1283,6 +1363,7 @@ $display .="
         'relief_id' => $rel->relief_id,
         'relief_amount' => $rel->relief_amount,
         'financial_month_year'=>Input::get('period'),
+        'process_type'=>Input::get('type')
         ]
         );
         }

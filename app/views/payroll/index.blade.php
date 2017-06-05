@@ -239,9 +239,9 @@ var per = document.getElementById("period").value;
 
                     <div class="form-group">
                         <label for="username">Select Category <span style="color:red">*</span></label>
-                        <select name="account" id="account" class="form-control" required>
+                        <select name="type" id="type" class="form-control" required>
                            <option></option>
-                           @if(Confide::user()->user_type == 'M')
+                           @if($type == 1 || Confide::user()->user_type == 'admin')
                            <option value="management"> Management </option>
                            @endif
                            <option value="normal"> Normal </option>
